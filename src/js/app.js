@@ -1,25 +1,25 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { VertexNormalsHelper } from 'three/examples/jsm/helpers/VertexNormalsHelper.js';
-import vertexShader from '../shaders/earth/vertex.glsl?raw';
-import fragmentShader from '../shaders/earth/fragment.glsl?raw';
-import pointsVertexShader from '../shaders/earthPoints/vertex.glsl?raw';
-import pointsFragmentShader from '../shaders/earthPoints/fragment.glsl?raw';
-import glowVertexShader from '../shaders/earthGlow/vertex.glsl?raw';
-import glowFragmentShader from '../shaders/earthGlow/fragment.glsl?raw';
-import CameraControls from '../Controls/CameraControls';
-import Animation from '../Controls/Animation';
 import GUI from 'lil-gui';
 import { gsap } from 'gsap';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader';
+
 
 export default function () {
+  /**
+   * 변수
+   */
+
+  let mouse = new THREE.Vector2();
+  let enterMenu = false
+  let currentIntersects = []
   const renderer = new THREE.WebGLRenderer({
     alpha: true,
   });
-  renderer.setClearColor(0x000000, 1);
+  renderer.setClearColor(0x0a1245, 1);
 
   const container = document.querySelector('#container');
-
   container.appendChild(renderer.domElement);
 
   const canvasSize = {
@@ -27,8 +27,8 @@ export default function () {
     height: window.innerHeight,
   };
 
-  const clock = new THREE.Clock();
-  const textureLoader = new THREE.TextureLoader();
+
+
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(
     75,
@@ -37,160 +37,136 @@ export default function () {
     100
   );
 
-  /** BackGround 
-  const cubeTextureLoader = new THREE.CubeTextureLoader();
-  const environmentMap = cubeTextureLoader.load([
-   'assets/environment/px.png',
-   'assets/environment/nx.png',
-   'assets/environment/py.png',
-   'assets/environment/ny.png',
-   'assets/environment/pz.png',
-   'assets/environment/nz.png'
-  ])
-  environmentMap.encoding = THREE.sRGBEncoding;
-  scene.background = environmentMap;
-  scene.environment = environmentMap;
-*/
+
+  /**
+   *  lights
+   */
+  const directionalLight =  new THREE.DirectionalLight('0#000000',0.2,100)
+  directionalLight.position.set(10,10,10)
+  scene.add(directionalLight);
+
+  /**
+   * fontLoader
+   */
+  const fontLoader = new FontLoader();
+  fontLoader.load('public/assets/fonts/Mukta_font.json', function (font){
+    const messages =['ABOUT','WORK','CONTACT']
+    const material = new THREE.MeshBasicMaterial({
+      color:'blue',
+      // transparent: true,
+      opacity: 1,
+    })
+    const fillmaterial = new THREE.MeshBasicMaterial({
+      color:'blue',
+      transparent: true,
+      opacity: 0.11,
+    })
+
+    for(let i = 0; i < messages.length; i++){
+      const shapes = font.generateShapes( messages[i], 1.7 );
+      const cloneFill = fillmaterial.clone();
+      const geometry = new THREE.ShapeGeometry(shapes)
+      //get center
+      geometry.computeBoundingBox();
+      // const xMid = - 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x ) ;
+      const xMid = - 5 ;
+      geometry.translate( xMid, 0, 0 );
+    
+      
+      const mesh = new THREE.Mesh(geometry,cloneFill);
+      mesh.position.y = i *2.3
+      mesh.position.z = 0.51
+      mesh.name = 'menu'
+      
+      scene.add(mesh)
+
+      /**
+       * LineTextGeometry
+       */
+      const holeShapes = [];
+      
+
+
+
+      for(let j = 0; j < shapes.length; j++){
+        const shape = shapes[j];
+        if ( shape.holes && shape.holes.length > 0 ) {
+
+          for ( let k = 0; k < shape.holes.length; k++ ) {
+
+            const hole = shape.holes[ k ];
+            holeShapes.push( hole );
+          }
+        }
+      }
+
+      shapes.push.apply( shapes, holeShapes );
+      const lineText = new THREE.Object3D();
+      for ( let j = 0; j < shapes.length; j ++ ) {
+
+        const shape = shapes[ j ];
+
+        const points = shape.getPoints();
+        const geometry = new THREE.BufferGeometry().setFromPoints( points );
+        geometry.translate( xMid, 0, 0 );
+        const lineMesh = new THREE.Line( geometry, material );
+
+        geometry.computeBoundingBox();
+
+        lineMesh.position.y = i * 2.3
+        lineText.add( lineMesh );
+      }
+      scene.add( lineText );
+    }// fontLoading end
+
+    
+
+    // scene.add(mesh)
+  })
+
 
   /** library */
-  //const gui = new GUI();
-  
-  /** animation */
-  let introStart = true;
-  const animation = new Animation(introStart,gsap);
-  
-  //introStart = animation.animationIntro();
-  
 
 
   /** Camera */
-  //camera.position.set(0, 0, 1.9);
-  camera.position.set(0, 0, 0.85);
+  camera.position.set(0, 0,10);
+
 
   /** Controls */
-  const cameraControls = new CameraControls();
   const orbitControls = () => {
     const controls = new OrbitControls(camera, renderer.domElement);
-
     return controls;
-  }
+  }// orbitControls end
   
-  /** create Earth */
-  const createEarth = () => {
-    const material = new THREE.ShaderMaterial({
-      wireframe: false,
-      uniforms: {
-        uTexture: {
-          value: textureLoader.load('assets/earth-specular-map.png'),
-        },
-      },
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
-      side: THREE.DoubleSide,
-      transparent: true,
-    });
+  /**
+   * raycaster
+   */
+  const raycaster = new THREE.Raycaster();
 
-    const geometry = new THREE.SphereGeometry(0.8, 30, 30);
-    const mesh = new THREE.Mesh(geometry, material);
 
-    return mesh;
-  };
-
-  /** create EarthPointe*/
-  const createEarthPoints = () => {
-    const material = new THREE.ShaderMaterial({
-      wireframe: true,
-      uniforms: {
-        uTexture: {
-          value: textureLoader.load('assets/earth-specular-map.png'),
-        },
-        uTime: {
-          value: 0,
-        },
-      },
-      vertexShader: pointsVertexShader,
-      fragmentShader: pointsFragmentShader,
-      side: THREE.DoubleSide,
-      transparent: true,
-      depthWrite: false,
-      depthTest: false,
-      blending: THREE.AdditiveBlending,
-    });
-
-    const geometry = new THREE.IcosahedronGeometry(0.8, 30, 30);
-    geometry.rotateY(-Math.PI);
-
-    const mesh = new THREE.Points(geometry, material);
-
-    return mesh;
-  };
-
+  /** 
+   * createMeus
+   */
+  const createMenu = () => {  
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(11,14,1),
+      new THREE.MeshPhysicalMaterial({
+        // color: 'red',
+        roughness: 0,
+        metalness: 0,
+        transmission: 1,
+        thickness: 0.5,
+      })
+      )
+      mesh.name = 'menuList'
+    return mesh
+  }// createMenu end
   
-  /** create EarthGlow */
-  const createEarthGlow = () => {
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        uZoom: {
-          value: 1,
-        },
-      },
-      vertexShader: glowVertexShader,
-      fragmentShader: glowFragmentShader,
-      side: THREE.BackSide,
-      transparent: true,
-    });
-
-    const geometry = new THREE.SphereGeometry(1, 40, 40);
-    const mesh = new THREE.Mesh(geometry, material);
-
-    return mesh;
-  };
-
-  /** create Galaxis */
-  const createGalaxis = () => {
-    const count  = 10000;
-    const positions = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++){
-      positions[i] = (Math.random() - 0.5) * 4;
-      positions[i + 1] = (Math.random() - 0.5) * 4;
-      positions[i + 2] = (Math.random() - 0.5) * 4; 
-    }
-    const starsGeometric = new THREE.BufferGeometry();
-    starsGeometric.setAttribute(
-      'position',
-      new THREE.BufferAttribute(positions, 3)
-    )
-    const starsMaterial = new THREE.PointsMaterial({
-      size : Math.random() * 0.007,
-      transparent : true,
-      depthWrite : false,
-      color: '#3f9f8e',
-      alphaMap : textureLoader.load('assets/particle.png'),
-      map: textureLoader.load('assets/particle.png'),
-    })
-    const star = new THREE.Points(starsGeometric, starsMaterial);
-
-    return star
-  }  
-
-
   /** create */
   const create = () => {
-    const earth = createEarth();
-    const earthPoints = createEarthPoints();
-    const earthGlow = createEarthGlow();
-    const stars = createGalaxis()
-    // const glowNormalHelper = new VertexNormalsHelper(earthGlow, 0.1);
-
-    scene.add(earth, earthPoints, earthGlow, stars);
-
-    return {
-      earth,
-      earthPoints,
-      earthGlow,
-      stars
-    };
-  };
+    const menuList = createMenu();
+    scene.add(menuList);
+  };// create end
 
   const resize = () => {
     canvasSize.width = window.innerWidth;
@@ -201,67 +177,103 @@ export default function () {
 
     renderer.setSize(canvasSize.width, canvasSize.height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  };
+  };// resize end
 
-  let lastScrollY = 0;
-  let entered = false;
   const addEvent = () => {
     window.addEventListener('resize', resize);
-    window.addEventListener("scroll", () => {
-      lastScrollY = animation.scrollAnimation(window.scrollY,lastScrollY);
-      animation.enterToContent(camera);
-    });
-    window.addEventListener('mousedown', (e) => {
-      console.log('d '+e.clientX)
-      console.log('d ' +e.clientY)
+    window.addEventListener('mousemove',(e) => {
+      getMousePoint(e)
+      getRaycaster()
     })
-    window.addEventListener('mouseup', (e) => {
-      console.log('u '+e.clientX)
-      console.log('u '+e.clientY)
-    })
+  };// addEvent end
   
-  };
-  
+  /**
+   *  getMousePoint - get mouse x,y points
+  */
+  const getMousePoint = (e) => {
+    mouse.x = e.clientX / canvasSize.width * 2 - 1
+    mouse.y = - (e.clientY / canvasSize.height) * 2 + 1
+  }// getMousePoint end
 
+  /**
+   *  getRaycaster  
+  */
+ const getRaycaster = () =>{
+    const intersects = raycaster.intersectObjects(scene.children)
+    raycaster.setFromCamera(mouse, camera)
 
-  const draw = (obj, orbitControl) => {
-    const { earth, earthPoints, earthGlow, stars} = obj;
-    // earth.rotation.x += 0.0005;
-    earth.rotation.y += 0.0005;
-    earth.rotation.x = 0.3;
-    // earthPoints.rotation.x += 0.0005;
-    earthPoints.rotation.y += 0.0005;
-    earthPoints.rotation.x = 0.3;
-    // stars.rotation.x += 0.0007;
-     stars.rotation.y += 0.0007;
+    for(const inetersect of intersects){
+      // menuCheck
+      if(inetersect.object.name === 'menu'){
+        if(currentIntersects.length == 0){
+          meunCheck(inetersect)
+          gsap.to(inetersect.object.material,{
+            opacity : 1,
+            duration: .2,
+          })
+          currentIntersects.push(inetersect.object)
+        }else if(currentIntersects.length >= 1){
+          for(let i = 0; i < currentIntersects.length; i++){
+            if(currentIntersects[i] !== inetersect.object){
+              gsap.to(inetersect.object.material,{
+                opacity : 1,
+                duration: .2,
+              })
+              gsap.to(currentIntersects[i].material,{
+                opacity : 0,
+                duration: .2,
+              })
+              currentIntersects.splice(0),
+              currentIntersects.push(inetersect.object)
+            }
+          }
+      }
+    }//menuCheck end
+    if(inetersect.object.name === 'menuList'){
+      enterMenu = true;
+    }
+  }
+  meunCheck(enterMenu,intersects)
+ }//getRaycaster end
 
+ /**
+  * 
+  * @param {boolean} position check on menulist
+  * @param {object} intersects check for menu
+  */
+ const meunCheck = (enterMenu,intersects) => {
+  if(enterMenu == true && currentIntersects.length >= 1){
+      for(let i = 0; i < currentIntersects.length; i++){
+        gsap.to(currentIntersects[i].material,{
+          opacity : 0,
+          duration: .2,
+        })
+      }
+    currentIntersects = []
+    enterMenu = false
+  }
+ }
 
-
+  const draw = ( orbitControl) => {
 
     orbitControl.update();
     renderer.render(scene, camera);
-    // console.log(orbitControl.getDistance)
-    earthGlow.material.uniforms.uZoom.value = orbitControl.target.distanceTo(
-      orbitControl.object.position
-    );
-
-    earthPoints.material.uniforms.uTime.value = clock.getElapsedTime();
 
     requestAnimationFrame(() => {
-      draw(obj, orbitControl);
+      draw(orbitControl);
     });
-  };
+  };//draw end
 
 
 
 
   const initialize = () => {
-    const obj = create();
+    create();
     const orbitControl = orbitControls()
     addEvent();
     resize();
-    draw(obj, orbitControl);
-  };
+    draw(orbitControl);
+  }; //intialize end
 
   initialize();
 }
