@@ -14,6 +14,10 @@ export default function () {
   let mouse = new THREE.Vector2();
   let enterMenu = false
   let currentIntersects = []
+
+  let enteredMenu = null
+  let newMenu = null
+
   const renderer = new THREE.WebGLRenderer({
     alpha: true,
   });
@@ -201,39 +205,19 @@ export default function () {
  const getRaycaster = () =>{
     const intersects = raycaster.intersectObjects(scene.children)
     raycaster.setFromCamera(mouse, camera)
+    enterMenu = false
 
     for(const inetersect of intersects){
+      if(inetersect.object.name === 'menuList'){
+        enterMenu = true;
+      }
       // menuCheck
       if(inetersect.object.name === 'menu'){
-        if(currentIntersects.length == 0){
-          meunCheck(inetersect)
-          gsap.to(inetersect.object.material,{
-            opacity : 1,
-            duration: .2,
-          })
-          currentIntersects.push(inetersect.object)
-        }else if(currentIntersects.length >= 1){
-          for(let i = 0; i < currentIntersects.length; i++){
-            if(currentIntersects[i] !== inetersect.object){
-              gsap.to(inetersect.object.material,{
-                opacity : 1,
-                duration: .2,
-              })
-              gsap.to(currentIntersects[i].material,{
-                opacity : 0,
-                duration: .2,
-              })
-              currentIntersects.splice(0),
-              currentIntersects.push(inetersect.object)
-            }
-          }
-      }
-    }//menuCheck end
-    if(inetersect.object.name === 'menuList'){
-      enterMenu = true;
-    }
+        newMenu = inetersect.object
+      }//menuCheck end
   }
-  meunCheck(enterMenu,intersects)
+
+  meunCheck()
  }//getRaycaster end
 
  /**
@@ -241,18 +225,33 @@ export default function () {
   * @param {boolean} position check on menulist
   * @param {object} intersects check for menu
   */
- const meunCheck = (enterMenu,intersects) => {
-  if(enterMenu == true && currentIntersects.length >= 1){
-      for(let i = 0; i < currentIntersects.length; i++){
-        gsap.to(currentIntersects[i].material,{
-          opacity : 0,
-          duration: .2,
-        })
-      }
-    currentIntersects = []
-    enterMenu = false
+ const meunCheck = () => {
+   
+   if(enterMenu == true && newMenu){
+    if(newMenu && enteredMenu == null){
+      gsap.to(newMenu.material,{
+        opacity :1,
+        duration : .2,
+      })  
+      enteredMenu = newMenu
+    }else if(newMenu && enteredMenu  && newMenu != enteredMenu){
+      gsap.to(newMenu.material,{
+        opacity : 1,
+        duration: .2,
+      })
+      gsap.to(enteredMenu.material,{
+        opacity : .1,
+        duration: .2,
+      })
+      enteredMenu = newMenu
+    }
+  }else if(enterMenu == false){
+    gsap.to(enteredMenu.material,{
+      opacity : .1,
+      duration: .2,
+    })
   }
- }
+ }//menu check end
 
   const draw = ( orbitControl) => {
 
