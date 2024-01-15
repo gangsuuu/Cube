@@ -1,0 +1,3 @@
+
+//https://github.com/Ameobea/three-good-godrays
+godray effect NearestMipMapLinearFilter
