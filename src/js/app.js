@@ -74,12 +74,17 @@ export default function () {
     const unrealBloomPass = new UnrealBloomPass(
       new THREE.Vector2(canvasSize.width / canvasSize.height)
     )
-    unrealBloomPass.strength  = 0.2 // unrealBloomPass 파워
+    unrealBloomPass.strength  = 1.2 // unrealBloomPass 파워
+    unrealBloomPass.threshold = 0.2 // 범위 0 default full screen
+    unrealBloomPass.radius = 0.1
+    unrealBloomPass.filter = false;
     effectComposer.addPass(renderpass);
     effectComposer.addPass(unrealBloomPass);
 
   }
 
+  const test = new THREE.TextureLoader().load('./assets/imges/negx.jpg')
+  console.log(test)
 
 
   /**
@@ -208,41 +213,21 @@ export default function () {
    */
   const createBox = () => {
 
-
-
-    // const geometry = new THREE.BoxGeometry(3,3,3);
-    // const material = new THREE.MeshBasicMaterial({
-    //   color: 'red',
-    //   transparent: true,
-    //   opacity:.3,
-    // })
-    // const mesh = new THREE.Mesh(geometry,material)
-    // const cloen = mesh.clone()
-
-    // cloen.layers.enable(BLOOM_SCENE)
-    // cloen.position.set(0,4,0)
-    // scene.add(mesh,cloen)
-    // // return mesh 
-    const geometry = new THREE.IcosahedronGeometry( 1, 15 );
-
-    for ( let i = 0; i < 50; i ++ ) {
-
-      const color = new THREE.Color();
-      color.setHSL( Math.random(), 0.7, Math.random() * 0.2 + 0.05 );
-
-      const material = new THREE.MeshBasicMaterial( { color: color } );
-      const sphere = new THREE.Mesh( geometry, material );
-      sphere.position.x = Math.random() * 10 - 5;
-      sphere.position.y = Math.random() * 10 - 5;
-      sphere.position.z = Math.random() * 10 - 5;
-      sphere.position.normalize().multiplyScalar( Math.random() * 4.0 + 2.0 );
-      sphere.scale.setScalar( Math.random() * Math.random() + 0.5 );
-      scene.add( sphere );
-
-      if ( Math.random() < 0.25 ) sphere.layers.enable( BLOOM_SCENE );
-      console.log(sphere.layers)
-    }
-
+    //** line */
+    const BoxGeometry = new THREE.BoxGeometry( 3,3,3 );
+    const edgesGeometry  = new THREE.EdgesGeometry(BoxGeometry)
+    const line = new THREE.LineSegments(edgesGeometry , new THREE.LineBasicMaterial({
+      color: '0xffffff'
+    }));
+    line.layers.set(1)
+    // scene.add(line);
+    const plane = new THREE.PlaneGeometry(4,4);
+    const material = new THREE.MeshBasicMaterial({
+      map: test,
+    })
+    const mesh = new THREE.Mesh(plane,material)
+    mesh.layers.set(1)
+    scene.add(mesh)
   }
 
 
@@ -342,11 +327,18 @@ export default function () {
 
   const draw = ( orbitControl) => {
     renderer.clear();
+    
+    camera.layers.set(1); // effectComposer
+    effectComposer.render()
+    
+    renderer.clearDepth()
+    camera.layers.set(0); // normal
+    renderer.render(scene, camera);
 
+
+    
 
     orbitControl.update();
-    // renderer.render(scene, camera);
-    effectComposer.render()
     requestAnimationFrame(() => {
       draw(orbitControl);
     });

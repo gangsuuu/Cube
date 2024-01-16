@@ -1,3 +1,10 @@
 
 //https://github.com/Ameobea/three-good-godrays
 godray effect NearestMipMapLinearFilter
+
+//unrealBloomPass selectBloom
+https://discourse.threejs.org/t/solved-effectcomposer-layers/3158/4
+https://threejs.org/examples/#webgl_postprocessing_unreal_bloom_selective
+https://pmndrs.github.io/postprocessing/public/demo/#bloom
+https://github.com/mrdoob/three.js/blob/master/examples/jsm/postprocessing/UnrealBloomPass.js
+https://threejs.org/docs/index.html?q=layer#api/en/core/Layers
