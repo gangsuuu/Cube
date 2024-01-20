@@ -7,6 +7,9 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { gsap } from 'gsap';
 import GUI from 'lil-gui';
+import { degToRad } from 'three/src/math/MathUtils';
+import {  Reflector  } from 'three/examples/jsm/objects/Reflector.js'
+
 
 export default function () {
   /**
@@ -20,9 +23,9 @@ export default function () {
   let enteredMenu = null
   let newMenu = null
 
-
+ 
   /** 연습용 */
-  const BLOOM_SCENE = 1;
+  const BLOOM_SCENE = 0;
   const bloomLayer = new THREE.Layers()
   bloomLayer.set(BLOOM_SCENE)
 
@@ -83,8 +86,6 @@ export default function () {
 
   }
 
-  const test = new THREE.TextureLoader().load('./assets/imges/negx.jpg')
-  console.log(test)
 
 
   /**
@@ -208,6 +209,7 @@ export default function () {
     return mesh
   }// createMenu end
   
+
   /**
    * createBox
    */
@@ -219,16 +221,43 @@ export default function () {
     const line = new THREE.LineSegments(edgesGeometry , new THREE.LineBasicMaterial({
       color: '0xffffff'
     }));
-    line.layers.set(1)
-    // scene.add(line);
-    const plane = new THREE.PlaneGeometry(4,4);
-    const material = new THREE.MeshBasicMaterial({
-      map: test,
+    const cloneLine = line.clone();
+    line.layers.set(0)
+    cloneLine.layers.set(0)
+    scene.add(line,cloneLine);
+    
+
+    
+    const test = new THREE.BoxGeometry(5,5,5)
+    const material = new THREE.MeshPhysicalMaterial({
+      roughness: 0,
+      metalness: 0,
+      transmission: 1,
+      thickness: 0.5,
     })
-    const mesh = new THREE.Mesh(plane,material)
+    const mesh = new THREE.Mesh(test,material)
     mesh.layers.set(1)
-    scene.add(mesh)
-  }
+    // mesh.rotation.x = degToRad(-90)
+    // mesh.position.z = -2.5
+    // scene.add(mesh)
+
+    const mirror = new Reflector(
+      new THREE.PlaneGeometry(10, 10),
+      {
+          color: 0xb5b5b5,
+          clipBias:1,
+          textureWidth: window.innerWidth * window.devicePixelRatio,
+          textureHeight: window.innerHeight * window.devicePixelRatio
+      }
+    )
+    // mirror.rotateX(Math.PI)
+    mirror.position.z = -2
+    // mirror.position.z = -10
+    // mirror.rotateX( - Math.PI / 2 );
+    mirror.layers.set(0)
+    
+    scene.add(mirror)
+  }//create end
 
 
 
@@ -328,7 +357,7 @@ export default function () {
   const draw = ( orbitControl) => {
     renderer.clear();
     
-    camera.layers.set(1); // effectComposer
+    camera.layers.set(0); // effectComposer
     effectComposer.render()
     
     renderer.clearDepth()
@@ -338,7 +367,7 @@ export default function () {
 
     
 
-    orbitControl.update();
+    orbitControl.update(1);
     requestAnimationFrame(() => {
       draw(orbitControl);
     });
