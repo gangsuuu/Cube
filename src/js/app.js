@@ -11,18 +11,22 @@ import About  from './About.js';
 import Contact from './Contact.js';
 import Content from './Content.js';
 import Controll from './Controll.js';
-
+import Loading from './Loading.js';
 import BoxPosition from './BoxPosition.js';
 import CssControlls from './CssControll.js';
 
+
+
 export default function () {
-  
   const boxsArray = []
   const boxPosition = new BoxPosition();
+  const loading = new Loading(gsap);
   const about = new About(gsap,boxsArray);
+
   const contact = new Contact(gsap)
   const content = new Content(gsap)
   const controll = new Controll(gsap);
+
   /**
    * 변수
   */
@@ -39,6 +43,7 @@ export default function () {
   let isCameraWork = true;
   let isShowList = true;
   let entered = false;
+  let loadingMesh
   const cssControlls = new CssControlls();
   const navAs = document.querySelectorAll('.navWrapper a')
   const navWrapper = document.querySelector('.navWrapper')
@@ -153,19 +158,9 @@ export default function () {
   //   }
   // }//controlBloomPass end
 
-
-  //for check
-  // scene.add(new THREE.Mesh(
-  //   new THREE.BoxGeometry(0.5,0.5,0.5),
-  //   new THREE.MeshBasicMaterial({
-  //     color: 'red'
-  //   })
-  // ))
-
   /**
    *  lights
    */
-  // const directionalLight =  new THREE.AmbientLight('0#235112',10,100)
   const directionalLight =  new THREE.DirectionalLight('0#000000',1,100)
   directionalLight.position.set(1,1,1)
   scene.add(directionalLight);
@@ -355,7 +350,7 @@ export default function () {
         const link = e.target.dataset.link
 
         if(link === 'about') {
-          about.intro()
+          // about.intro()
         }//about end
         else if(link === 'contact'){
           // contact.test()
@@ -366,8 +361,9 @@ export default function () {
         else if(link === 'controll'){
           // controll.test()
         }//controll end
-        history.pushState(null,null,link)
+
         currentPage = String(link)
+        loading.loading(currentPage);
       }//onComplete end
     })//camera animte end
   }//clickNavAnimation end
@@ -664,19 +660,30 @@ export default function () {
   const checklink = () =>   {
     if(localStorage.getItem('prevlink')){
       currentPage = localStorage.getItem('prevlink')
-      
+      localStorage.removeItem('prevlink');
+  
     }
+  }
+
+  const createLoadingMesh = () => {
+    const box = new THREE.BoxGeometry(boxSizeX,boxSizeY,boxSizeZ);
+    const edgesGeometry =  new THREE.EdgesGeometry(box);
+    const loadingMesh = new THREE.LineSegments(edgesGeometry , new THREE.LineBasicMaterial({color: 'white'}))
+    scene.add(loadingMesh);
+    return loadingMesh
   }
 
   const initialize = () => {
     checklink();
+    loadingMesh = createLoadingMesh()
+    loading.loading(currentPage,loadingMesh)
     addPostEffects()
-    create();
+    // create();
     const orbitControl = orbitControls()
     addEvent();
     resize();
     draw(orbitControl);
-  }; //intialize end
 
+  }; //intialize end
   initialize()
 }
