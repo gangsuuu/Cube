@@ -7,42 +7,78 @@ import { gsap } from 'gsap';
 import GUI from 'lil-gui';
 import { degToRad } from 'three/src/math/MathUtils';
 import {  Reflector  } from 'three/examples/jsm/objects/Reflector.js'
+import About  from './About.js';
+import Contact from './Contact.js';
+import Content from './Content.js';
+import Controll from './Controll.js';
 
 import BoxPosition from './BoxPosition.js';
 import CssControlls from './CssControll.js';
 
 export default function () {
+  
+  const boxsArray = []
   const boxPosition = new BoxPosition();
+  const about = new About(gsap,boxsArray);
+  const contact = new Contact(gsap)
+  const content = new Content(gsap)
+  const controll = new Controll(gsap);
   /**
    * 변수
-   */
-  let mouse = new THREE.Vector2();
+  */
   let boxGroup = new THREE.Group()
+  let mouse = new THREE.Vector2();
+  // let boxGroup = new THREE.Group()
+  let textureBoxGroup = new THREE.Group()
   let boxStates = ['normal','entered','about','content','controll','contact']
   let boxState = 0
+  let currentPages = ['about','content','controll','contact']
+  let currentPage = 'index';
   let isGlow
-  let isEntered = false
-  let isCameraWork = true
+  let isEntered = false;
+  let isCameraWork = true;
+  let isShowList = true;
+  let entered = false;
   const cssControlls = new CssControlls();
   const navAs = document.querySelectorAll('.navWrapper a')
   const navWrapper = document.querySelector('.navWrapper')
+  const navTitle = document.querySelector('.navTitle span')
+  const navTitleP = document.querySelector('.navTitle')
+  
 
   /* boxState */
   let boxXCount = 5 //한 줄의 박스 갯수
   let boxYCount = 5 //한 줄의 박스 갯수
-  let boxZCount = 5 //한 줄의 박스 갯수
+  let boxZCount = 6 //한 줄의 박스 갯수
   let boxTotals = boxXCount * boxYCount * boxZCount // 박스 전체 갯수
   let boxSizeX = 0.5 //박스 x 길이
   let boxSizeY = 0.5 //박스 y 길이
   let boxSizeZ = 0.5 //박스 z 길이
   let boxSpace = 0.05 // 박스 사이 간격
   let xSize = boxXCount * boxSizeX + (boxXCount - 1) * boxSpace // 박스 간격 포함한 전체 X사이즈 
-  let zSize = boxYCount * boxSizeZ + (boxYCount - 1) * boxSpace // 박스 간격 포함한 전체 Y사이즈 
   let ySize = boxZCount * boxSizeY + (boxZCount - 1) * boxSpace // 박스 간격 포함한 전체 Z사이즈 
+  let zSize = boxYCount * boxSizeZ + (boxYCount - 1) * boxSpace // 박스 간격 포함한 전체 Y사이즈 
 
   let isBoxAnimating = false;
-  let rotationBoxs = [[24],[49,19],[74,44,14],[99,69,39,9],[124,94,64,34,4],[119,89,59,29],[114,84,54],[109,79],[104]]
 
+
+    /** param */
+    let bloomParam = {
+      threshold : 0.23,
+      strength : 0.4,
+      radius : 1,
+      exposure: 1
+    }
+    let textureBoxParam = {
+      xCount : boxXCount,
+      yCount : boxYCount,
+      boxSizeX : boxSizeX,
+      boxSizeY : boxSizeY,
+      boxSizeZ : boxSizeZ,
+      unitx : 1/ boxXCount,
+      unity : 1/ boxYCount,
+    }
+  
 
 
   /** layerModel */
@@ -57,6 +93,7 @@ export default function () {
   // renderer.toneMapping = THREE.ReinhardToneMapping;
   renderer.setClearColor(0x282828, 1);
   renderer.autoClear = false;
+
 
   const container = document.querySelector('#container');
   container.appendChild(renderer.domElement);
@@ -88,20 +125,33 @@ export default function () {
    * post processing
    */
   const effectComposer = new EffectComposer(renderer);
+  let unrealBloomPass
   const addPostEffects = () =>{
     // effectComposer.renderToScreen = false
     const renderpass = new RenderPass(scene, camera);
-    const unrealBloomPass = new UnrealBloomPass(
+    unrealBloomPass = new UnrealBloomPass(
       new THREE.Vector2(canvasSize.width / canvasSize.height)
     )
-    unrealBloomPass.strength  = 0.4 // unrealBloomPass 파워
-    unrealBloomPass.threshold = .23 // 범위 0 default full screen
-    unrealBloomPass.radius = 1
+    unrealBloomPass.strength  = bloomParam.strength // unrealBloomPass 파워
+    unrealBloomPass.threshold = bloomParam.threshold // 범위 0 default full screen
+    unrealBloomPass.radius = bloomParam.radius
     unrealBloomPass.filter = false;
     effectComposer.addPass(renderpass);
     effectComposer.addPass(unrealBloomPass);
-
   }
+
+  /**
+   * for gui
+   */
+  // const controllBloomPass = (type,vlaue) =>{
+  //   if(type ==='threshold'){
+  //     unrealBloomPass.threshold = bloomParam.threshold
+  //   }else if(type ==='strength'){
+  //     unrealBloomPass.strength  = bloomParam.strength
+  //   }else if(type === 'radius'){
+  //     unrealBloomPass.radius = bloomParam.radius
+  //   }
+  // }//controlBloomPass end
 
 
   //for check
@@ -115,19 +165,39 @@ export default function () {
   /**
    *  lights
    */
+  // const directionalLight =  new THREE.AmbientLight('0#235112',10,100)
   const directionalLight =  new THREE.DirectionalLight('0#000000',1,100)
-  // const directionalLight =  new THREE.AmbientLight('0#000000',0.2,100)
-  directionalLight.position.set(10,10,10)
+  directionalLight.position.set(1,1,1)
   scene.add(directionalLight);
   
-
+  const clone = directionalLight.clone()
+  clone.layers.set(1)
+  clone.intensity = 2
+  scene.add(clone);
+  
+  
   /** library */
-
+  // const gui = new GUI()
+  // gui.add(bloomParam, 'threshold', 0.0, 1.0).onChange(function(value) {
+  //   bloomParam.threshold = value
+  //   controllBloomPass('threshold',value)
+  // })
+  // gui.add(bloomParam, 'strength', 0.0, 3.0).onChange(function(value) {
+  //   bloomParam.strength = value
+  //   controllBloomPass('strength',value)
+  // })
+  // gui.add(bloomParam, 'radius', 0.0, 1.0).onChange(function(value) {
+  //   bloomParam.radius = value
+  //   controllBloomPass('radius',value)
+  // })
 
   /** Camera */
   // camera.position.set(0, 0, 8);
   camera.position.set(0, 0, 5);
 
+  /** texture */
+  const loader = new THREE.TextureLoader();
+  const testTexture = loader.load();
 
   /** Controls */
   const orbitControls = () => {
@@ -141,30 +211,10 @@ export default function () {
    */
   const raycaster = new THREE.Raycaster();
 
-  /** 
-   * createMeus
-   */
-  const createMenu = () => {  
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(11,14,1),
-      new THREE.MeshPhysicalMaterial({
-        // color: 'red',
-        roughness: 0,
-        metalness: 0,
-        transmission: 1,
-        thickness: 0.5,
-      })
-      )
-      mesh.name = 'menuList'
-    return mesh
-  }// createMenu end
-
   /**
    * createBox
    */
   const createBox = () => {
-
-    
     //** line */
     const BoxGeometry = new THREE.BoxGeometry( boxSizeX, boxSizeY, boxSizeZ );
     const edgesGeometry  = new THREE.EdgesGeometry(BoxGeometry)
@@ -174,6 +224,7 @@ export default function () {
     
     line.layers.set(0)
     //x축
+
     for(let i = 0; i <boxXCount ; i++) {
       //y축
       for(let j = 0; j <boxYCount ; j++) {
@@ -184,30 +235,57 @@ export default function () {
           // let y = (j * boxSizeY + j * boxSpace) - ySize/2
           // let z = (k * boxSizeZ + k * boxSpace) - zSize/2
 
-          let x = (i * boxSizeX + i *boxSpace) - boxXCount*boxSizeX/2 + boxSpace/2
-          let y = (j * boxSizeY + j *boxSpace) - boxYCount*boxSizeY/2 + boxSpace/2
-          let z = (k * boxSizeY + k *boxSpace) - boxZCount*boxSizeZ/2 + boxSpace/2
+          // let x = (i * boxSizeX + i *boxSpace) - boxXCount*boxSizeX/2 + boxSpace/2
+          // let y = (j * boxSizeY + j *boxSpace) - boxYCount*boxSizeY/2 + boxSpace/2
+          // let z = (k * boxSizeY + k *boxSpace) - boxZCount*boxSizeZ/2 + boxSpace/2
 
-          cloneLine.position.set(x,y,z)
-
+          // cloneLine.position.set(x,y,z)
           cloneLine.layers.set(0)
           boxGroup.add(cloneLine)
+          boxsArray.push(cloneLine);
         }
       }
     }//boxs creating end
+
+
      scene.add(boxGroup)
   }//create end
 
+  /**
+   * create texture matrial
+   */
+  const createTextureBox = ()=>{
+    let geomatery, material
+    let parma = {color : 'white', map : testTexture}
+    for(let i = 0; i < textureBoxParam.xCount; i++){
+      for(let j = 0; j < textureBoxParam.yCount; j++){
+         geomatery = new THREE.BoxGeometry(boxSizeX,boxSizeY,boxSizeZ);
+         let uvs = geomatery.attributes.uv.array;
+         for(let k = 0; k < uvs.length; k +=2 ){
+            uvs[k] = (uvs[k] + i) * textureBoxParam.unitx
+            uvs[k + 1] = (uvs[k + 1] + j) * textureBoxParam.unity
+         }//uvsmaaping end
+         material = new THREE.MeshPhongMaterial(parma)
+         const mesh = new THREE.Mesh(geomatery,material);
+         let x = (i * textureBoxParam.boxSizeX + i * boxSpace) - textureBoxParam.xCount*textureBoxParam.boxSizeX/2 + boxSpace/2
+         let y = (j * textureBoxParam.boxSizeY + j * boxSpace) - textureBoxParam.yCount*textureBoxParam.boxSizeY/2 + boxSpace/2
+         let z = (4 * textureBoxParam.boxSizeZ + 4 * boxSpace) - textureBoxParam.yCount*textureBoxParam.boxSizeZ/2 + boxSpace/2
 
+         mesh.position.set(x,y,z)
+        //  mesh.rotation.x = (Math.PI / 180) * 80
 
-
+         mesh.layers.set(0)
+         textureBoxGroup.add(mesh)
+        }//inner for
+      }//end for
+      
+      scene.add(textureBoxGroup)
+  }//createTexurBox end
 
   /** create */
   const create = () => {
     createBox()
-    // const menuList = createMenu();
-    // scene.add(menuList);
-      
+    // createTextureBox()
   };// create end
 
   /*
@@ -238,7 +316,6 @@ export default function () {
       getRaycaster()
       caemraControll()
     })
-
     //nav animation range point
     getNavEvent()
   };// addEvent end
@@ -246,48 +323,51 @@ export default function () {
   /*
    * click Nav
    */
-  const clickNavAnimation = () => { 
+  const clickNavAnimation = (e) => { 
     if(isBoxAnimating) return 
     isBoxAnimating = true;
     isCameraWork = false;
-    
+    entered = true;
 
+    // toggleList()
 
     gsap.to(camera.rotation, {
       x:0,
       y:0,
       duration:0.1,
     })
-    moveToCube()
+    // moveToCube()
     
+
+
     gsap.to(boxGroup.rotation, {
       x:0,
       y:0,
       duration:0.2
     })
-    for(let i = 0; i < rotationBoxs.length; i++){
-      for(let j = 0; j < rotationBoxs[i].length; j++){
-        let num = rotationBoxs[i][j]
-        gsap.to(boxGroup.children[num].rotation, {
-          x : (Math.PI / 180) * 90,
-          duration: 1.0,
-          delay : 3 + (0.2 * i),
-          ease: "elastic.out(1.2,1.8)",
-        })//gsap end
-      }//for inner end
-    }//for out end
-    // gsap.to(boxGroup.rotation,{
-    //   x : (Math.PI / 180) * 90,
-    //   duration: 0.5,
-    //   delay : 0.8,
-    // })
     gsap.to(camera.position,{
-      z:8,
+      // z:8,
       duration: 2,
       delay: 0.5,
       ease: "power4.in",
       onComplete : () => { 
         isBoxAnimating = false;
+        const link = e.target.dataset.link
+
+        if(link === 'about') {
+          about.intro()
+        }//about end
+        else if(link === 'contact'){
+          // contact.test()
+        }//contact end
+        else if(link === 'content'){
+          // content.test()
+        }//content end
+        else if(link === 'controll'){
+          // controll.test()
+        }//controll end
+        history.pushState(null,null,link)
+        currentPage = String(link)
       }//onComplete end
     })//camera animte end
   }//clickNavAnimation end
@@ -322,6 +402,42 @@ export default function () {
       }
     } //for end
   }//moveToCube end
+
+  /**
+   * toggleList
+   */
+  const toggleList = () =>{
+    if(isShowList){
+      navAs.forEach((nav,index)=> {
+        gsap.to(nav,{
+          y:35,
+          duration : 0.25,
+          opacity : 0,
+        })
+      })
+
+      isShowList = false
+      boxState = 0;
+      entered = false;
+      boxsAnimation();
+      entered = true
+    } else if(!isShowList) {
+      navAs.forEach((nav)=> {
+        gsap.to(nav,{
+          y:0,
+          duration : 0.25,
+          opacity : 1,
+        })
+      })
+
+      isShowList = true;
+      entered = false;
+      boxState = 1;
+      boxsAnimation();
+    }
+    
+  }//toggleList end
+
 
   /**
    *  Nav A event
@@ -364,9 +480,27 @@ export default function () {
         isEntered = false
       })
     })//hoverEvent end
+
     navAs.forEach((navA)=> {
-      navA.addEventListener('click',clickNavAnimation)
+      navA.addEventListener('click',(e) => {clickNavAnimation(e)})
     })//clickEvent end
+    navTitleP.addEventListener('mouseenter',() => {
+      boxState = 1
+      boxsAnimation();
+    })
+    navTitleP.addEventListener('mouseleave',() => {
+      boxState = 0
+      boxsAnimation();
+    })
+    navTitle.addEventListener('click',toggleList)
+    navTitle.addEventListener('mouseenter',(e)=>{
+        e.target.style.color = 'var(--textColor01hover)'
+       
+    })
+    navTitle.addEventListener('mouseleave',(e)=>{
+        e.target.style.color = 'var(--textColorTitle)'
+    })
+
   }//getNavEvent end
 
   /*
@@ -395,6 +529,7 @@ export default function () {
    * boxsAnimation for hover Animations
    */
   const boxsAnimation = () => {
+    if(entered) return
     if(boxState === 0){
       if(isEntered == true){
         moveToCube()
@@ -409,7 +544,7 @@ export default function () {
         boxGroup.rotation.y = 0 
         for(let i = 0; i < boxGroup.children.length; i++){
 
-        let x = (Math.random() * xSize - xSize/2)  * (Math.random()*6.4)
+        let x = (Math.random() * xSize - xSize/2)  * (Math.random()*6.4) 
         let y = (Math.random() * xSize - ySize/2) * (Math.random()*6.4)
         let z = Math.random() * 8  - 4
         gsap.to(boxGroup.children[i].position,{
@@ -451,13 +586,16 @@ export default function () {
           moveCount++;
         }//for end 
       })//foreach end
+
       // left boxs
       for(let i = moveCount ; i < boxTotals; i++){
+        let y = Math.random()
+        y < 0.5 ? y= -4 : y = 4
         gsap.to(boxGroup.children[i].position,{
-          x : (i-moveCount) * 1,
-          y: (Math.random() * xSize - ySize/2) * (Math.random()*11),
-          z : Math.random() * 10 - 10,
-          duration: 0.88,
+          x :  ((i - moveCount) - ((boxTotals-moveCount)/2)) + 0.5,
+          y: y,
+          z : Math.random() * 13 - 12,
+          duration: 0.78,
           ease: "power3.in",
           })
           // moveCount++;
@@ -478,6 +616,14 @@ export default function () {
    */
   const caemraControll = () => {
     if(!isCameraWork) return
+    if(entered){
+      gsap.to(boxGroup.rotation, {
+        x:0,
+        y:0,
+        duration:0.3
+      })
+      return
+    } 
     boxGroup.rotation.x = -mouse.y/7
     boxGroup.rotation.y = mouse.x/7   
   }
@@ -503,7 +649,7 @@ export default function () {
     
     //1 layer set
     renderer.clearDepth()
-    camera.layers.set(0); // normal
+    camera.layers.set(1); // normal
     renderer.render(scene, camera);
 
     orbitControl.update(1);
@@ -515,7 +661,15 @@ export default function () {
     });
   };//draw end
 
+  const checklink = () =>   {
+    if(localStorage.getItem('prevlink')){
+      currentPage = localStorage.getItem('prevlink')
+      
+    }
+  }
+
   const initialize = () => {
+    checklink();
     addPostEffects()
     create();
     const orbitControl = orbitControls()
@@ -524,5 +678,5 @@ export default function () {
     draw(orbitControl);
   }; //intialize end
 
-  initialize();
+  initialize()
 }
