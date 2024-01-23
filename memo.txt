@@ -19,3 +19,35 @@ https://mine-it-record.tistory.com/439
 https://kgu0724.tistory.com/229
 https://hianna.tistory.com/697
 https://lily-im.tistory.com/18
+
+
+
+
+ /** library */
+  // const gui = new GUI()
+  // gui.add(camera.position,'z',-2,5,0.1)
+  // gui.add(bloomParam, 'threshold', 0.0, 1.0).onChange(function(value) {
+  //   bloomParam.threshold = value
+  //   controllBloomPass('threshold',value)
+  // })
+  // gui.add(bloomParam, 'strength', 0.0, 3.0).onChange(function(value) {
+  //   bloomParam.strength = value
+  //   controllBloomPass('strength',value)
+  // })
+  // gui.add(bloomParam, 'radius', 0.0, 1.0).onChange(function(value) {
+  //   bloomParam.radius = value
+  //   controllBloomPass('radius',value)
+  // })
+
+    /**
+   * for gui
+   */
+  // const controllBloomPass = (type,vlaue) =>{
+  //   if(type ==='threshold'){
+  //     unrealBloomPass.threshold = bloomParam.threshold
+  //   }else if(type ==='strength'){
+  //     unrealBloomPass.strength  = bloomParam.strength
+  //   }else if(type === 'radius'){
+  //     unrealBloomPass.radius = bloomParam.radius
+  //   }
+  // }//controlBloomPass end

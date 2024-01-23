@@ -1,50 +1,54 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { gsap } from 'gsap';
 import GUI from 'lil-gui';
-import { degToRad } from 'three/src/math/MathUtils';
-import {  Reflector  } from 'three/examples/jsm/objects/Reflector.js'
+
 import About  from './About.js';
 import Contact from './Contact.js';
 import Content from './Content.js';
 import Controll from './Controll.js';
 import Loading from './Loading.js';
 import BoxPosition from './BoxPosition.js';
-import CssControlls from './CssControll.js';
-
+import IndexPage from './IndexPage.js';
 
 
 export default function () {
   const boxsArray = []
   const boxPosition = new BoxPosition();
-  const loading = new Loading(gsap);
-  const about = new About(gsap,boxsArray);
+  let loading,about, contact,content, controll, indexpage
 
-  const contact = new Contact(gsap)
-  const content = new Content(gsap)
-  const controll = new Controll(gsap);
+
+  const getJS = ()=> {
+    indexpage = new IndexPage(gsap);
+    about = new About(gsap,gui);
+    contact = new Contact(gsap)
+    content = new Content(gsap)
+    controll = new Controll(gsap);
+  }
 
   /**
    * 변수
   */
-  let boxGroup = new THREE.Group()
+  let currentGrop = new THREE.Group()
   let mouse = new THREE.Vector2();
-  // let boxGroup = new THREE.Group()
-  let textureBoxGroup = new THREE.Group()
   let boxStates = ['normal','entered','about','content','controll','contact']
-  let boxState = 0
   let currentPages = ['about','content','controll','contact']
-  let currentPage = 'index';
-  let isGlow
+  let currentPage = 'about';
+  
+  let indexNavPoint = 0;
+
   let isEntered = false;
   let isCameraWork = true;
   let isShowList = true;
+
+  
   let entered = false;
+
+  let boxState = 0
   let loadingMesh
-  const cssControlls = new CssControlls();
+  let currentMeshs = []
   const navAs = document.querySelectorAll('.navWrapper a')
   const navWrapper = document.querySelector('.navWrapper')
   const navTitle = document.querySelector('.navTitle span')
@@ -52,38 +56,80 @@ export default function () {
   
 
   /* boxState */
-  let boxXCount = 5 //한 줄의 박스 갯수
-  let boxYCount = 5 //한 줄의 박스 갯수
-  let boxZCount = 6 //한 줄의 박스 갯수
-  let boxTotals = boxXCount * boxYCount * boxZCount // 박스 전체 갯수
-  let boxSizeX = 0.5 //박스 x 길이
-  let boxSizeY = 0.5 //박스 y 길이
-  let boxSizeZ = 0.5 //박스 z 길이
-  let boxSpace = 0.05 // 박스 사이 간격
-  let xSize = boxXCount * boxSizeX + (boxXCount - 1) * boxSpace // 박스 간격 포함한 전체 X사이즈 
-  let ySize = boxZCount * boxSizeY + (boxZCount - 1) * boxSpace // 박스 간격 포함한 전체 Z사이즈 
-  let zSize = boxYCount * boxSizeZ + (boxYCount - 1) * boxSpace // 박스 간격 포함한 전체 Y사이즈 
+  let indexXnum = 6 //한 줄의 박스 갯수
+  let indexYnum = 6 //한 줄의 박스 갯수
+  let indexZnum = 6 //한 줄의 박스 갯수
+  let boxTotals = indexXnum * indexYnum * indexZnum // 박스 전체 갯수
+  let indexXsize = 0.5 //박스 x 길이
+  let indexYsize = 0.5 //박스 y 길이
+  let indexZsize = 0.5 //박스 z 길이
+  let indexSpace = 0.05 // 박스 사이 간격
+  let xSize = indexXnum * indexXsize + (indexXnum - 1) * indexSpace // 박스 간격 포함한 전체 X사이즈 
+  let ySize = indexZnum * indexYsize + (indexZnum - 1) * indexSpace // 박스 간격 포함한 전체 Z사이즈 
+  let zSize = indexYnum * indexZsize + (indexYnum - 1) * indexSpace // 박스 간격 포함한 전체 Y사이즈 
 
-  let isBoxAnimating = false;
-
+  let aboutBoxXSize = 0.5
+  let aboutBoxYSize = 0.5
+  let aboutBoxZSize = 0.5
 
     /** param */
-    let bloomParam = {
+    const bloomParam = {
       threshold : 0.23,
       strength : 0.4,
       radius : 1,
       exposure: 1
     }
-    let textureBoxParam = {
-      xCount : boxXCount,
-      yCount : boxYCount,
-      boxSizeX : boxSizeX,
-      boxSizeY : boxSizeY,
-      boxSizeZ : boxSizeZ,
-      unitx : 1/ boxXCount,
-      unity : 1/ boxYCount,
+    const indexBoxState = {
+      mesh : new THREE.LineSegments(
+        new THREE.EdgesGeometry(
+          new THREE.BoxGeometry( indexXsize, indexYsize, indexZsize )
+        ),
+        new THREE.LineBasicMaterial({color: '0xffffff',transparent: true, opacity: 1,})
+      ),
+      xNum : indexXnum,
+      yNum : indexYnum,
+      zNum : indexZnum,
+      xSize : indexXsize,
+      ySize : indexYsize,
+      zSize : indexZsize,
+      space : indexSpace
+    } // indexBoxObject state
+
+    const aboutMouseState = {
     }
-  
+
+    const aboutGroup01 = {
+      box1 : new THREE.LineSegments(
+        new THREE.EdgesGeometry(
+          new THREE.BoxGeometry( aboutBoxXSize, aboutBoxYSize, aboutBoxZSize )
+        ),
+        new THREE.LineBasicMaterial({color: '0xffffff',transparent: true, opacity: 1,})
+      ),
+      box2 : new THREE.Mesh(
+        new THREE.BoxGeometry( aboutBoxXSize, aboutBoxYSize, aboutBoxZSize ),
+        new THREE.LineBasicMaterial({color: '0xffffff',transparent:true})
+      ),
+      xSize : aboutBoxXSize,
+      ySize : aboutBoxYSize,
+      zSize : aboutBoxZSize,
+      box1Count : 5,
+      box2Count : 5,
+    }
+
+    const aboutGroup03 = {
+      box1 : new THREE.LineSegments(
+        new THREE.EdgesGeometry(
+          new THREE.BoxGeometry( aboutBoxXSize, aboutBoxYSize, aboutBoxZSize )
+        ),
+        new THREE.LineBasicMaterial({color: '0xffffff',transparent: true, opacity: 1,})
+      ),
+      box2 : [],
+      xSize : aboutBoxXSize,
+      ySize : aboutBoxYSize,
+      zSize : aboutBoxZSize,
+      box2xGrid : 17,
+      box2yGrid : 10,
+    }
 
 
   /** layerModel */
@@ -119,6 +165,7 @@ export default function () {
     100
   );
 
+  const gui = new GUI()
   /**
    *  selectBloom 
    */
@@ -145,18 +192,7 @@ export default function () {
     effectComposer.addPass(unrealBloomPass);
   }
 
-  /**
-   * for gui
-   */
-  // const controllBloomPass = (type,vlaue) =>{
-  //   if(type ==='threshold'){
-  //     unrealBloomPass.threshold = bloomParam.threshold
-  //   }else if(type ==='strength'){
-  //     unrealBloomPass.strength  = bloomParam.strength
-  //   }else if(type === 'radius'){
-  //     unrealBloomPass.radius = bloomParam.radius
-  //   }
-  // }//controlBloomPass end
+  
 
   /**
    *  lights
@@ -170,21 +206,6 @@ export default function () {
   clone.intensity = 2
   scene.add(clone);
   
-  
-  /** library */
-  // const gui = new GUI()
-  // gui.add(bloomParam, 'threshold', 0.0, 1.0).onChange(function(value) {
-  //   bloomParam.threshold = value
-  //   controllBloomPass('threshold',value)
-  // })
-  // gui.add(bloomParam, 'strength', 0.0, 3.0).onChange(function(value) {
-  //   bloomParam.strength = value
-  //   controllBloomPass('strength',value)
-  // })
-  // gui.add(bloomParam, 'radius', 0.0, 1.0).onChange(function(value) {
-  //   bloomParam.radius = value
-  //   controllBloomPass('radius',value)
-  // })
 
   /** Camera */
   // camera.position.set(0, 0, 8);
@@ -194,92 +215,43 @@ export default function () {
   const loader = new THREE.TextureLoader();
   const testTexture = loader.load();
 
-  /** Controls */
-  const orbitControls = () => {
-    const controls = new OrbitControls(camera, renderer.domElement);
-    // controls.enabled = false;
-    return controls;
-  }// orbitControls end
   
   /**
    * raycaster
    */
   const raycaster = new THREE.Raycaster();
 
-  /**
-   * createBox
-   */
-  const createBox = () => {
-    //** line */
-    const BoxGeometry = new THREE.BoxGeometry( boxSizeX, boxSizeY, boxSizeZ );
-    const edgesGeometry  = new THREE.EdgesGeometry(BoxGeometry)
-    const line = new THREE.LineSegments(edgesGeometry , new THREE.LineBasicMaterial({
-      color: '0xffffff'
-    }));
-    
-    line.layers.set(0)
-    //x축
-
-    for(let i = 0; i <boxXCount ; i++) {
-      //y축
-      for(let j = 0; j <boxYCount ; j++) {
-        //z축
-        for(let k = 0; k <boxZCount ; k++) {
-          const cloneLine = line.clone();
-          // let x = (i * boxSizeX + i * boxSpace) - xSize/2
-          // let y = (j * boxSizeY + j * boxSpace) - ySize/2
-          // let z = (k * boxSizeZ + k * boxSpace) - zSize/2
-
-          // let x = (i * boxSizeX + i *boxSpace) - boxXCount*boxSizeX/2 + boxSpace/2
-          // let y = (j * boxSizeY + j *boxSpace) - boxYCount*boxSizeY/2 + boxSpace/2
-          // let z = (k * boxSizeY + k *boxSpace) - boxZCount*boxSizeZ/2 + boxSpace/2
-
-          // cloneLine.position.set(x,y,z)
-          cloneLine.layers.set(0)
-          boxGroup.add(cloneLine)
-          boxsArray.push(cloneLine);
-        }
-      }
-    }//boxs creating end
-
-
-     scene.add(boxGroup)
-  }//create end
-
-  /**
-   * create texture matrial
-   */
-  const createTextureBox = ()=>{
-    let geomatery, material
-    let parma = {color : 'white', map : testTexture}
-    for(let i = 0; i < textureBoxParam.xCount; i++){
-      for(let j = 0; j < textureBoxParam.yCount; j++){
-         geomatery = new THREE.BoxGeometry(boxSizeX,boxSizeY,boxSizeZ);
-         let uvs = geomatery.attributes.uv.array;
-         for(let k = 0; k < uvs.length; k +=2 ){
-            uvs[k] = (uvs[k] + i) * textureBoxParam.unitx
-            uvs[k + 1] = (uvs[k + 1] + j) * textureBoxParam.unity
-         }//uvsmaaping end
-         material = new THREE.MeshPhongMaterial(parma)
-         const mesh = new THREE.Mesh(geomatery,material);
-         let x = (i * textureBoxParam.boxSizeX + i * boxSpace) - textureBoxParam.xCount*textureBoxParam.boxSizeX/2 + boxSpace/2
-         let y = (j * textureBoxParam.boxSizeY + j * boxSpace) - textureBoxParam.yCount*textureBoxParam.boxSizeY/2 + boxSpace/2
-         let z = (4 * textureBoxParam.boxSizeZ + 4 * boxSpace) - textureBoxParam.yCount*textureBoxParam.boxSizeZ/2 + boxSpace/2
-
-         mesh.position.set(x,y,z)
-        //  mesh.rotation.x = (Math.PI / 180) * 80
-
-         mesh.layers.set(0)
-         textureBoxGroup.add(mesh)
-        }//inner for
-      }//end for
-      
-      scene.add(textureBoxGroup)
-  }//createTexurBox end
 
   /** create */
-  const create = () => {
-    createBox()
+  const createMesh = () => {
+    switch(currentPage) {
+      case 'index':
+        currentMeshs =  indexpage.createMesh(indexBoxState,scene,camera,currentGrop)
+        for(let i = 0; i < currentMeshs.length; i++) {
+          currentGrop.add(currentMeshs[i])
+        }
+        break;//index end
+      case 'about':
+        let gorup3Count = aboutGroup03.box2xGrid * aboutGroup03.box2yGrid;
+        for(let i = 0; i < gorup3Count; i++) {
+          let mesh = new THREE.Mesh(
+            new THREE.BoxGeometry( aboutBoxXSize, aboutBoxYSize, aboutBoxZSize ),
+            new THREE.MeshBasicMaterial({color: 'white', transparent :true, opacity: 1 })
+
+            )
+            aboutGroup03.box2.push(mesh)
+        }
+        about.createMesh(aboutGroup01,aboutGroup03,scene,camera,currentGrop)
+        break;//about end
+      case 'contact':
+
+        break;//contact end
+      case 'content':
+        break;//content end
+      case 'controll':
+        break;//controll end
+    }
+    
     // createTextureBox()
   };// create end
 
@@ -298,7 +270,7 @@ export default function () {
     effectComposer.setSize(canvasSize.width, canvasSize.height);
     
     //change range
-    chageRanges()
+    indexpage.setMouseAera()
   };// resize end
 
   /**
@@ -308,96 +280,20 @@ export default function () {
     window.addEventListener('resize', resize);
     window.addEventListener('mousemove',(e) => {
       getMousePoint(e)
-      getRaycaster()
-      caemraControll()
+      getRaycaster() 
+
+      switch(currentPage){
+        case 'index':
+          indexpage.boxRotation(mouse.x,mouse.y)
+        break;
+
+      }    //switch end
     })
+
     //nav animation range point
     getNavEvent()
   };// addEvent end
   
-  /*
-   * click Nav
-   */
-  const clickNavAnimation = (e) => { 
-    if(isBoxAnimating) return 
-    isBoxAnimating = true;
-    isCameraWork = false;
-    entered = true;
-
-    // toggleList()
-
-    gsap.to(camera.rotation, {
-      x:0,
-      y:0,
-      duration:0.1,
-    })
-    // moveToCube()
-    
-
-
-    gsap.to(boxGroup.rotation, {
-      x:0,
-      y:0,
-      duration:0.2
-    })
-    gsap.to(camera.position,{
-      // z:8,
-      duration: 2,
-      delay: 0.5,
-      ease: "power4.in",
-      onComplete : () => { 
-        isBoxAnimating = false;
-        const link = e.target.dataset.link
-
-        if(link === 'about') {
-          // about.intro()
-        }//about end
-        else if(link === 'contact'){
-          // contact.test()
-        }//contact end
-        else if(link === 'content'){
-          // content.test()
-        }//content end
-        else if(link === 'controll'){
-          // controll.test()
-        }//controll end
-
-        currentPage = String(link)
-        loading.loading(currentPage);
-      }//onComplete end
-    })//camera animte end
-  }//clickNavAnimation end
-
-  /**
-   * move to cube
-   */
-  const moveToCube = () => {
-    let xCount = 0 
-    let yCount = 0
-    let zCount = 0
-    for(let i = 0; i < boxGroup.children.length; i++){
-      let xPos = (xCount * boxSizeX + xCount * boxSpace) - boxXCount*boxSizeX/2 + boxSpace/2
-      let yPos = (yCount * boxSizeY + yCount * boxSpace) - boxYCount*boxSizeY/2 + boxSpace/2
-      let zPos = (zCount * boxSizeZ + zCount * boxSpace) - boxZCount*boxSizeZ/2 + boxSpace/2
-
-      gsap.to(boxGroup.children[i].position,{
-        x:xPos,
-        y:yPos,
-        z:zPos,
-        duration: 0.77,
-        ease: "power3.in",
-      })//gsap end
-      zCount++
-      if(zCount >= boxZCount){
-        zCount = 0
-        yCount++
-        if(yCount >= boxYCount){
-          yCount = 0
-          xCount++
-        }
-      }
-    } //for end
-  }//moveToCube end
 
   /**
    * toggleList
@@ -411,12 +307,6 @@ export default function () {
           opacity : 0,
         })
       })
-
-      isShowList = false
-      boxState = 0;
-      entered = false;
-      boxsAnimation();
-      entered = true
     } else if(!isShowList) {
       navAs.forEach((nav)=> {
         gsap.to(nav,{
@@ -425,13 +315,7 @@ export default function () {
           opacity : 1,
         })
       })
-
-      isShowList = true;
-      entered = false;
-      boxState = 1;
-      boxsAnimation();
     }
-    
   }//toggleList end
 
 
@@ -444,20 +328,20 @@ export default function () {
       navAs.forEach((navA) =>{
         navA.style.color = 'var(--textColor01in)'
       })
-      boxState = 1
-      boxsAnimation();
+      indexNavPoint = 1
+      indexpage.hoverAnimation(indexNavPoint);
     })
     navWrapper.addEventListener('mouseleave', (e) => {
       navAs.forEach((navA) =>{
         navA.style.color = 'var(--textColor01Out)'
       })
-      boxState = 0
-      boxsAnimation();
+      indexNavPoint = 0
+      indexpage.hoverAnimation(indexNavPoint);
     })
-    navWrapper.addEventListener('mousemove', (e) => {
+    navWrapper.addEventListener('mouseenter', (e) => {
       if(e.target == navWrapper){
-        boxState = 1
-        boxsAnimation();
+        indexNavPoint = 1
+        indexpage.hoverAnimation(indexNavPoint);
       }
     })
     navAs.forEach((a,index)=> {
@@ -465,28 +349,32 @@ export default function () {
         if(e.target === a){
           e.target.style.color = 'var(--textColor01hover)'
         }
-        boxState = index + 2
-        boxsAnimation();
+        indexNavPoint = index + 2
+        indexpage.hoverAnimation(indexNavPoint);
       })
       a.addEventListener('mouseleave',(e)=>{
         if(e.target === a){
           e.target.style.color = 'var(--textColor01in)'
         }
-        boxState = 1
+        indexNavPoint = 1
+        indexpage.hoverAnimation(indexNavPoint);
         isEntered = false
       })
     })//hoverEvent end
 
     navAs.forEach((navA)=> {
-      navA.addEventListener('click',(e) => {clickNavAnimation(e)})
+      navA.addEventListener('click',(e) => {
+        indexpage.pageMove(toggleList);
+        currentPage = loading.outro(e, currentPage);
+      })
     })//clickEvent end
     navTitleP.addEventListener('mouseenter',() => {
-      boxState = 1
-      boxsAnimation();
+      indexNavPoint = 1
+      indexpage.hoverAnimation(indexNavPoint);
     })
     navTitleP.addEventListener('mouseleave',() => {
-      boxState = 0
-      boxsAnimation();
+      indexNavPoint = 0
+      indexpage.hoverAnimation(indexNavPoint);
     })
     navTitle.addEventListener('click',toggleList)
     navTitle.addEventListener('mouseenter',(e)=>{
@@ -499,19 +387,6 @@ export default function () {
 
   }//getNavEvent end
 
-  /*
-   * Change range
-   */
-  const chageRanges = () => {
-    //navWrapper range Change
-    let navWrapperWidth = 0
-
-    for(let i = 0; i < navAs.length; i++){
-      let currentWidth =  navAs[i].offsetWidth
-      if(navWrapperWidth < currentWidth) navWrapperWidth = currentWidth
-    }
-    navWrapper.style.width = navWrapperWidth + 20 +'px'
-  }
 
   /**
    *  getMousePoint - get mouse x,y points
@@ -521,109 +396,7 @@ export default function () {
     mouse.y = - (e.clientY / canvasSize.height) * 2 + 1
   }// getMousePoint end
 
-  /**
-   * boxsAnimation for hover Animations
-   */
-  const boxsAnimation = () => {
-    if(entered) return
-    if(boxState === 0){
-      if(isEntered == true){
-        moveToCube()
-        isEntered =false
-      }//isEntered end
-      isCameraWork = true
-    }//boxState 0 end
-    else if (boxState === 1){
-      if(isEntered == false){
-        isBoxAnimating = true;
-        boxGroup.rotation.x = 0
-        boxGroup.rotation.y = 0 
-        for(let i = 0; i < boxGroup.children.length; i++){
-
-        let x = (Math.random() * xSize - xSize/2)  * (Math.random()*6.4) 
-        let y = (Math.random() * xSize - ySize/2) * (Math.random()*6.4)
-        let z = Math.random() * 8  - 4
-        gsap.to(boxGroup.children[i].position,{
-          x:x,
-          y:y,
-          z:z,
-          duration: 0.64,
-          ease: "elastic.out(0.2,0.1)",
-          onComplete : ()=>{
-          isBoxAnimating = false;  
-          }
-        })
-        isEntered = true
-        }
-      }
-      isCameraWork = true
-    }//boxState 1 end 
-    else if (boxState === 2 || boxState === 3 || boxState === 4 || boxState === 5){
-      let texts = []
-      let textsLength = 0
-      let moveCount = 0
-      let textsSpace = 1
-      texts = boxPosition.moveText(boxState)
-      textsLength = texts.length
-      let textsHeight =  (7 * boxSizeY) + (6 * textsSpace)
-      let textsWidth = textsLength * ((5 * boxSizeX) + (4 * boxSpace)) + ((textsLength-1) * textsSpace)
-
-      texts.forEach((text,index) => {
-        for(let i = 0; i < text.length; i++){
-          let x = (text[i][0]*boxSizeX) + (text[i][0]*boxSpace) + (index * xSize) +(index*textsSpace) - (textsWidth/2)
-          let y = -((text[i][1]*boxSizeY) + (text[i][1] * boxSpace) - (textsHeight / 4))
-          gsap.to(boxGroup.children[moveCount].position,{
-            x : x,
-            y: y,
-            z: -7,
-            duration: 0.77,
-            ease: "power3.in",
-            })
-          moveCount++;
-        }//for end 
-      })//foreach end
-
-      // left boxs
-      for(let i = moveCount ; i < boxTotals; i++){
-        let y = Math.random()
-        y < 0.5 ? y= -4 : y = 4
-        gsap.to(boxGroup.children[i].position,{
-          x :  ((i - moveCount) - ((boxTotals-moveCount)/2)) + 0.5,
-          y: y,
-          z : Math.random() * 13 - 12,
-          duration: 0.78,
-          ease: "power3.in",
-          })
-          // moveCount++;
-      }//for end
-      gsap.to(boxGroup.rotation, {
-        x: 0,
-        y: 0,
-        duration: 0.22
-      })//gsap end
-      boxGroup.rotation.x = 0
-      boxGroup.rotation.y = 0
-      isCameraWork = false
-    }//boxState 2,3,4,5 end
-  } //boxsAnimation end
-
-  /**
-   *  caemraControll 
-   */
-  const caemraControll = () => {
-    if(!isCameraWork) return
-    if(entered){
-      gsap.to(boxGroup.rotation, {
-        x:0,
-        y:0,
-        duration:0.3
-      })
-      return
-    } 
-    boxGroup.rotation.x = -mouse.y/7
-    boxGroup.rotation.y = mouse.x/7   
-  }
-
+  
 
   /**
    *  getRaycaster  
@@ -636,7 +409,7 @@ export default function () {
  /**
   * Draw 
   */
-  const draw = ( orbitControl) => {
+  const draw = ( ) => {
     renderer.clear();
     
     //0 layer set
@@ -648,12 +421,12 @@ export default function () {
     camera.layers.set(1); // normal
     renderer.render(scene, camera);
 
-    orbitControl.update(1);
+    // orbitControl.update(1);
     
     
     //Rerander
     requestAnimationFrame(() => {
-      draw(orbitControl);
+      draw();
     });
   };//draw end
 
@@ -661,28 +434,28 @@ export default function () {
     if(localStorage.getItem('prevlink')){
       currentPage = localStorage.getItem('prevlink')
       localStorage.removeItem('prevlink');
-  
     }
   }
 
   const createLoadingMesh = () => {
-    const box = new THREE.BoxGeometry(boxSizeX,boxSizeY,boxSizeZ);
+    const box = new THREE.BoxGeometry(indexXsize,indexYsize,indexZsize);
     const edgesGeometry =  new THREE.EdgesGeometry(box);
-    const loadingMesh = new THREE.LineSegments(edgesGeometry , new THREE.LineBasicMaterial({color: 'white'}))
-    scene.add(loadingMesh);
+    const loadingMesh = new THREE.LineSegments(edgesGeometry , new THREE.LineBasicMaterial({color: 'white', transparent : true,}))
     return loadingMesh
   }
 
   const initialize = () => {
+    getJS()
     checklink();
     loadingMesh = createLoadingMesh()
-    loading.loading(currentPage,loadingMesh)
+    currentMeshs = createMesh();
+    loading = new Loading(gsap,currentPage,loadingMesh,camera,scene);
+    loading.loading()
     addPostEffects()
-    // create();
-    const orbitControl = orbitControls()
+    // const orbitControl = orbitControls()
     addEvent();
     resize();
-    draw(orbitControl);
+    draw();
 
   }; //intialize end
   initialize()
