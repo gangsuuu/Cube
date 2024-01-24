@@ -57,7 +57,7 @@ export default class Loading {
     //intro 애니메이션
     intro(){
         this.tl.to(this.camera.position,{
-            z:-0.09,
+            // z:-0.09,
             duration:1.2,
             ease: "power1.inOut",
         },"<=")

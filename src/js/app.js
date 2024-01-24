@@ -3,6 +3,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { gsap } from 'gsap';
+import ScrollTrigger from 'gsap/src/ScrollTrigger';
 import GUI from 'lil-gui';
 
 import About  from './About.js';
@@ -15,18 +16,25 @@ import IndexPage from './IndexPage.js';
 
 
 export default function () {
+  const body = document.querySelector('body') 
+  const navAs = document.querySelectorAll('.navWrapper a')
+  const navWrapper = document.querySelector('.navWrapper')
+  const navTitle = document.querySelector('.navTitle span')
+  const navTitleP = document.querySelector('.navTitle')
+
+  const aboutSeondWrapper = document.querySelector('.aboutSeondWrapper');
+  const texts = aboutSeondWrapper.querySelectorAll(".aboutSecondSubject")
+
+  gsap.registerPlugin(ScrollTrigger) 
+
   const boxsArray = []
   const boxPosition = new BoxPosition();
+
+
   let loading,about, contact,content, controll, indexpage
 
 
-  const getJS = ()=> {
-    indexpage = new IndexPage(gsap);
-    about = new About(gsap,gui);
-    contact = new Contact(gsap)
-    content = new Content(gsap)
-    controll = new Controll(gsap);
-  }
+
 
   /**
    * 변수
@@ -49,10 +57,6 @@ export default function () {
   let boxState = 0
   let loadingMesh
   let currentMeshs = []
-  const navAs = document.querySelectorAll('.navWrapper a')
-  const navWrapper = document.querySelector('.navWrapper')
-  const navTitle = document.querySelector('.navTitle span')
-  const navTitleP = document.querySelector('.navTitle')
   
 
   /* boxState */
@@ -74,9 +78,12 @@ export default function () {
 
     /** param */
     const bloomParam = {
-      threshold : 0.23,
-      strength : 0.4,
-      radius : 1,
+      // threshold : 0.23,
+      threshold : 0.55,
+      // strength : 0.4,
+      strength : 0.1,
+      // radius : 1,
+      radius : 0,
       exposure: 1
     }
     const indexBoxState = {
@@ -197,7 +204,7 @@ export default function () {
   /**
    *  lights
    */
-  const directionalLight =  new THREE.DirectionalLight('0#000000',1,100)
+  const directionalLight =  new THREE.DirectionalLight('0#000000',10,100)
   directionalLight.position.set(1,1,1)
   scene.add(directionalLight);
   
@@ -222,6 +229,25 @@ export default function () {
   const raycaster = new THREE.Raycaster();
 
 
+  /** test----------------------------------------------------- */
+
+  texts.forEach((text,index) => {
+    let start = (index * 5 +32) + "%"
+    gsap.to(text,{
+      scrollTrigger: {
+        trigger: aboutSeondWrapper,//객체기준범위
+        start: `${start} 0%`,
+        end: "+=0%",
+        markers: true,//개발가이드선
+        scrub: 1,
+      },
+      opacity:1,
+      duration:1,
+      top: (index * 20 +10) +"%",
+    })
+  })
+ /** test----------------------------------------------------- */
+ 
   /** create */
   const createMesh = () => {
     switch(currentPage) {
@@ -271,6 +297,10 @@ export default function () {
     
     //change range
     indexpage.setMouseAera()
+
+    //fontsize
+    const fontPer =  window.innerWidth / 1980
+    body.style.fontSize = `${fontPer}rem`
   };// resize end
 
   /**
@@ -421,14 +451,19 @@ export default function () {
     camera.layers.set(1); // normal
     renderer.render(scene, camera);
 
-    // orbitControl.update(1);
-    
-    
     //Rerander
     requestAnimationFrame(() => {
       draw();
     });
   };//draw end
+
+  const getJS = ()=> {
+    indexpage = new IndexPage(gsap);
+    about = new About(gsap,gui);
+    contact = new Contact(gsap)
+    content = new Content(gsap)
+    controll = new Controll(gsap);
+  }
 
   const checklink = () =>   {
     if(localStorage.getItem('prevlink')){
@@ -436,6 +471,8 @@ export default function () {
       localStorage.removeItem('prevlink');
     }
   }
+
+
 
   const createLoadingMesh = () => {
     const box = new THREE.BoxGeometry(indexXsize,indexYsize,indexZsize);
@@ -449,8 +486,8 @@ export default function () {
     checklink();
     loadingMesh = createLoadingMesh()
     currentMeshs = createMesh();
-    loading = new Loading(gsap,currentPage,loadingMesh,camera,scene);
-    loading.loading()
+    // loading = new Loading(gsap,currentPage,loadingMesh,camera,scene);
+    // loading.loading()
     addPostEffects()
     // const orbitControl = orbitControls()
     addEvent();

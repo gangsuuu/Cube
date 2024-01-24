@@ -16,6 +16,9 @@ export default class About {
         
         this.trigger = document.querySelector('.animationtrigger')
         this.about = document.querySelector('.about');
+        this.aboutSeondWrapper = document.querySelector('.aboutSeondWrapper');
+        this.aboutThirdContentTittle = document.querySelector('.aboutThirdContentTittle');
+        console.log(this.aboutSeondWrapper)
     }
    
     createMesh(aboutGroup01,aboutGroup03,scene,camera,currentGrop){
@@ -32,6 +35,7 @@ export default class About {
             onComplte:()=>{
                 this.createBox1()
                 this.createBox3()
+                this.scrollTrigger()
             }
         })
     }//createMesh
@@ -65,8 +69,35 @@ export default class About {
             }
         }
 
-        this.scene.add(this.currentGroup)            
+
+        this.gsap.to(this.group03[14].material,{
+                // opacity:0,
+                duration: 0.5
+        })
+
+        
         this.guiCheck()
     }//createBox1
 
+
+    scrollTrigger(){
+
+            this.tl.to(this.trigger,{
+                scrollTrigger: {
+                    trigger: this.aboutSeondWrapper,//객체기준범위
+                    start: "top 20%",
+                    end: "top 40%",
+                    // markers: true,//개발가이드선
+                    scrub: 1,
+                    ontoggle : () => {
+                        console.log('test')
+                    }
+                  },
+            })
+
+    }
+
+    guiCheck() {
+
+    }
 }
