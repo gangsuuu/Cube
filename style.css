@@ -120,7 +120,7 @@ body::-webkit-scrollbar {
 .about{
 	position: relative;
 	width: 100vw;
-	/* display: none;	 */
+	display: none;	
 }
 
 .aboutFirstWrapper { 
@@ -131,7 +131,7 @@ body::-webkit-scrollbar {
 	justify-content: left;
 	align-items: end;
 	gap: 5%;
-	/* margin-bottom: 50%; */
+	margin-bottom: 50%;
 }
 .imgwrapper {
 	width: 100%;
@@ -163,27 +163,41 @@ body::-webkit-scrollbar {
 	min-width: 360px;
 }
 
-/* *aboutSeondWrapper */
-.aboutSeondWrapper{
+/* *aboutSecondWrapper */
+.aboutSecondWrapper{
 	width: 100%;
-	height: 200vh;
-	margin-bottom: 30%;
+	height: 300vh;
+	margin-bottom: 35%;
 }
-.aboutSeondContents{
+.aboutSecondContents{
+	position: sticky;
 	width: 100%;
-	height: 200vh;
+	height: 100vh;
+	top:10%;
 }
 .aboutSecondSubject {
-	position: sticky;
+	position: relative;
 	padding-left: 5%;
 	font-size: 9em;
 	color:var(--aboutSubjectText);
 	letter-spacing: 0.1em;
 	width: 100%;
 	line-height: 120%;
-	top:5%;
 	opacity: 0;
 }
+.aboutSecondSubject:nth-child(1){
+	top: 0%;
+}
+.aboutSecondSubject:nth-child(2){
+	top:8%;
+}
+.aboutSecondSubject:nth-child(3){
+	top: 16%;
+}
+.aboutSecondSubject:nth-child(4){
+	top:24%
+}
+
 .aboutSecondSubject span{
 	display: inline-block;
 	width: 7%;

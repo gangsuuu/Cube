@@ -22,8 +22,8 @@ export default function () {
   const navTitle = document.querySelector('.navTitle span')
   const navTitleP = document.querySelector('.navTitle')
 
-  const aboutSeondWrapper = document.querySelector('.aboutSeondWrapper');
-  const texts = aboutSeondWrapper.querySelectorAll(".aboutSecondSubject")
+  const aboutSecondWrapper = document.querySelector('.aboutSecondWrapper');
+  const texts = aboutSecondWrapper.querySelectorAll(".aboutSecondSubject")
 
   gsap.registerPlugin(ScrollTrigger) 
 
@@ -43,7 +43,7 @@ export default function () {
   let mouse = new THREE.Vector2();
   let boxStates = ['normal','entered','about','content','controll','contact']
   let currentPages = ['about','content','controll','contact']
-  let currentPage = 'about';
+  let currentPage = 'index';
   
   let indexNavPoint = 0;
 
@@ -215,7 +215,7 @@ export default function () {
   
 
   /** Camera */
-  // camera.position.set(0, 0, 8);
+  // camera.position.set(0, 3, 8);
   camera.position.set(0, 0, 5);
 
   /** texture */
@@ -228,25 +228,6 @@ export default function () {
    */
   const raycaster = new THREE.Raycaster();
 
-
-  /** test----------------------------------------------------- */
-
-  texts.forEach((text,index) => {
-    let start = (index * 5 +32) + "%"
-    gsap.to(text,{
-      scrollTrigger: {
-        trigger: aboutSeondWrapper,//객체기준범위
-        start: `${start} 0%`,
-        end: "+=0%",
-        markers: true,//개발가이드선
-        scrub: 1,
-      },
-      opacity:1,
-      duration:1,
-      top: (index * 20 +10) +"%",
-    })
-  })
- /** test----------------------------------------------------- */
  
   /** create */
   const createMesh = () => {
@@ -271,6 +252,42 @@ export default function () {
         break;//about end
       case 'contact':
 
+        // let keyboardMesh = new THREE.LineSegments(
+        //   new THREE.EdgesGeometry(
+        //     new THREE.PlaneGeometry(2,2),
+        //    new THREE.LineBasicMaterial({color: '0xffffff',transparent: true, opacity: 1,})
+        //   )
+        // )
+          
+        let x = -1
+        let y = -1
+        let width = 2
+        let height = 2
+        let radius = 0.15
+        let shape = new THREE.Shape()
+        shape.moveTo(x, y + radius)
+        shape.lineTo(x,y+ height -radius);
+        shape.quadraticCurveTo(x,y + height, x+ radius, y + height)
+        shape.lineTo(x + width - radius, y + height)
+        shape.quadraticCurveTo(x + width, y + height, x + width, y + height - radius)
+        shape.lineTo(x + width, y + radius),
+        shape.quadraticCurveTo( x + width, y, x + width - radius, y );
+        shape.lineTo( x + radius, y );
+        shape.quadraticCurveTo( x, y, x, y + radius );
+        
+
+
+        let box = new THREE.ShapeGeometry( shape );
+        let line = new THREE.EdgesGeometry(box)
+
+
+        let material = new THREE.LineBasicMaterial({color : 'white'})
+        let mesh = new THREE.LineSegments(line, material)
+        scene.add(mesh)
+
+
+        // scene.add(keyboardMesh)
+        contact.createMesh()
         break;//contact end
       case 'content':
         break;//content end
@@ -486,8 +503,8 @@ export default function () {
     checklink();
     loadingMesh = createLoadingMesh()
     currentMeshs = createMesh();
-    // loading = new Loading(gsap,currentPage,loadingMesh,camera,scene);
-    // loading.loading()
+    loading = new Loading(gsap,currentPage,loadingMesh,camera,scene);
+    loading.loading()
     addPostEffects()
     // const orbitControl = orbitControls()
     addEvent();

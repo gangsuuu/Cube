@@ -16,9 +16,9 @@ export default class About {
         
         this.trigger = document.querySelector('.animationtrigger')
         this.about = document.querySelector('.about');
-        this.aboutSeondWrapper = document.querySelector('.aboutSeondWrapper');
+        this.aboutSecondWrapper = document.querySelector('.aboutSecondWrapper');
+        this.secondSubjects = document.querySelectorAll(".aboutSecondSubject")
         this.aboutThirdContentTittle = document.querySelector('.aboutThirdContentTittle');
-        console.log(this.aboutSeondWrapper)
     }
    
     createMesh(aboutGroup01,aboutGroup03,scene,camera,currentGrop){
@@ -81,21 +81,41 @@ export default class About {
 
 
     scrollTrigger(){
+        this.group01Trigger()
+        this.group02Trigger()
+    }//trigger insert
+    
+    group01Trigger(){
 
-            this.tl.to(this.trigger,{
-                scrollTrigger: {
-                    trigger: this.aboutSeondWrapper,//객체기준범위
-                    start: "top 20%",
-                    end: "top 40%",
-                    // markers: true,//개발가이드선
-                    scrub: 1,
-                    ontoggle : () => {
-                        console.log('test')
-                    }
-                  },
+    }//01trigger
+
+    group02Trigger(){
+        this.secondSubjects.forEach((subject,index) => {
+            let start = (index * 8) + "%"
+            this.gsap.to(subject,{
+              scrollTrigger: {
+                trigger: this.aboutSecondWrapper,//객체기준범위
+                start: `${start} 40%`,
+                end: "+=0%",
+                markers: true,//개발가이드선
+              },
+              opacity:1,
+              duration:1,
             })
+          })
+          this.group03.forEach((mesh,index) => {
+            this.gsap(this.group03[num].material,{
+                scrollTrigger : {
+                    trigger : this.aboutSecondWrapper,
+                    start: '0 80%',
+                    end: '+=0%',
+                },
+                opacity:1,
+                duration:1
+            })
+          })
 
-    }
+    }//02trigger
 
     guiCheck() {
 
